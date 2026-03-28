@@ -114,6 +114,34 @@ This means one model handles both lightweight patrol and deep testing. No separa
 
 **Budget guidance:** On Max subscription, budget ~4-6 hours of overnight operation. Opus patrol checks are cheap; the expensive part is the full test runs.
 
+### Builder Agent Compatibility
+
+The Dual-Patrol Model works with any builder agent that can read and write files. The patrol mechanism differs by agent type:
+
+| Builder Agent | Patrol Method | fswatch Boost | Notes |
+|---------------|--------------|---------------|-------|
+| **Claude Code** | Native (reads file on interval) | Yes — sub-second reaction | Default builder. Full Dual-Patrol compatible. |
+| **Codex CLI** | Native (persistent local process) | Yes — has built-in filesystem watch RPCs | Drop-in replacement for Claude Code. Same architecture. |
+| **Codex Cloud** | External wrapper required | N/A (runs in isolated sandbox) | Each task gets a repo snapshot, produces a diff, exits. Needs a CI script or GitHub Action to poll FLIGHT_PLAN.md and spawn tasks. |
+| **OpenClaw** | Native (event-driven skill) | N/A (uses its own trigger system) | Becomes another builder agent polling the same file. |
+| **Cursor / Windsurf** | Manual or plugin-based | Possible via extension | IDE agents may need a plugin to poll FLIGHT_PLAN.md. |
+
+**For Codex Cloud integration:** Use a GitHub Action or CI script as the bridge. The wrapper polls FLIGHT_PLAN.md (or triggers on commit), reads FINDINGS when STATUS is `FIX_REQUESTED`, spawns a Codex Cloud task with the findings as the prompt, and commits the resulting diff. Cowork picks up the changes on its next patrol. The wrapper replaces the polling that a persistent agent would do natively.
+
+### Optional: File-Watch Acceleration (Claude Code / Codex CLI)
+
+Persistent builder agents can layer fswatch on top of the 10-minute patrol for faster reaction:
+
+```bash
+# Claude Code or Codex CLI — watch for FLIGHT_PLAN.md changes
+fswatch -o FLIGHT_DECK/FLIGHT_PLAN.md | while read; do
+  # File changed — check STATUS immediately instead of waiting for next patrol
+  check_status_and_act
+done
+```
+
+The 10-minute patrol timer still runs as a safety net. fswatch gives sub-second reaction time when it works; polling catches anything it misses. Cowork stays on polling only (cannot run background file watchers).
+
 ---
 
 ## 📊 STATUS BLOCK
