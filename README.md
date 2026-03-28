@@ -101,6 +101,8 @@ When you need maximum rigor: multi-agent orchestration, [Ralph Wiggum](https://g
 
 ### 🔌 Integrations
 
+OpenClaw integration available — drop `OPENCLAW_SKILL.md` into any OpenClaw agent system to run Test Pilot Loop flights without additional setup.
+
 | File | What It Is |
 |------|-----------|
 | [OPENCLAW_SKILL.md](OPENCLAW_SKILL.md) | OpenClaw skill — self-contained version for OpenClaw agent systems |
