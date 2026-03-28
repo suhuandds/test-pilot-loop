@@ -432,7 +432,103 @@ Full three-tier test: ~45–70 min. Quick Flight (cold only): ~15 min.
 
 ---
 
-## Smart Retest Scope
+## Long Session Resilience (Context Compaction Protocol)
+
+AI agents have finite context windows. During exhaustive Insider audits or multi-tier test flights, the conversation may compact (summarize older context to make room for new). When this happens, granular observations — specific element counts, pixel-level details, running checklists — are lost from working memory. The summary captures the big picture but drops the audit trail.
+
+**The fix: treat disk as your real memory. Conversation is scratch.**
+
+### Before Testing Starts
+
+Create a working report file at the start of every test flight. Don't wait until the end.
+
+```
+FLIGHT_DECK/TEST_FLIGHT_REPORT_WIP.md
+```
+
+This file accumulates findings incrementally. If compaction erases your conversation context, the file still has everything you've written.
+
+Also create a testing checklist — every screen and major element you need to test, derived from the spec:
+
+```
+TEST FLIGHT CHECKLIST
+═════════════════════
+Screen: Import Step
+  □ Drag-and-drop zone
+  □ "Choose Folder…" button
+  □ Destination Folder card
+  □ PSV Engine panel toggles
+  □ Schedule Import panel
+  → Status: NOT STARTED
+
+Screen: Scan Step
+  □ Resume prompt
+  □ Progress bar + pipeline stages
+  □ Live engine stats
+  □ Cancel Scan button
+  □ Scan Complete stats grid
+  → Status: NOT STARTED
+
+Screen: Settings > Folders
+  □ Input Folder path + Change
+  □ Destination Folder path + Change
+  □ Review Folder path + Change
+  □ Post-Sort Cleanup dropdown
+  □ Auto-Import toggle
+  → Status: NOT STARTED
+
+[... every screen ...]
+```
+
+### During Testing: Write After Every Screen
+
+After completing each screen's audit, **immediately** append your findings to the WIP report file. Don't hold results in conversation memory.
+
+```
+After each screen:
+  1. Write findings to TEST_FLIGHT_REPORT_WIP.md
+  2. Update the checklist (□ → ✅ or □ → ❌ BUG)
+  3. Then move to the next screen
+```
+
+This way, even if compaction happens between Screen 4 and Screen 5, Screens 1–4 are safely on disk.
+
+### When Context Is Getting Long
+
+If you sense the conversation is approaching its limit (many tool calls, extensive screenshot analysis, deep into a multi-screen audit), proactively write a **checkpoint**:
+
+```
+CHECKPOINT — [timestamp]
+════════════════════════
+Screens completed: [list]
+Screens remaining: [list]
+Current screen: [name] — tested [X] of [Y] elements
+Bugs found so far: [count] — see WIP report for details
+Next action: [what to do when resuming]
+```
+
+Write this to the WIP file. After compaction, the conversation summary will say "you were testing Settings tab 3 of 6" — and the checkpoint file has the exact state.
+
+### After Compaction: How to Resume
+
+When continuing from a compacted context:
+
+1. **Read the WIP report file** — this has all findings so far
+2. **Read the checklist** — this shows what's done and what's remaining
+3. **Read the checkpoint** (if one was written) — this has exact resume state
+4. **Continue from where the checklist says you left off** — don't re-test completed screens
+
+### Rule Summary
+
+| Rule | Why |
+|------|-----|
+| Create WIP report file before first screenshot | Disk survives compaction; memory doesn't |
+| Write findings after each screen, not at the end | Partial results are better than lost results |
+| Write a checkpoint when the session feels long | Gives your future self exact resume coordinates |
+| After compaction, read files before acting | The files are your source of truth, not the summary |
+| Never re-test screens already marked ✅ in the checklist | Compaction isn't a reason to repeat work |
+
+---
 
 After bug fixes, use `git diff` to determine which dimensions need retesting. Skip everything else.
 

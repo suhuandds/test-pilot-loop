@@ -606,6 +606,16 @@ You don't always need all three levels:
 
 ---
 
+## Long Sessions and Context Compaction
+
+Exhaustive test flights (especially Insider tier audits) can exceed the AI's context window, triggering compaction — a lossy summary of older conversation. When this happens, granular observations are lost from working memory.
+
+**The protocol: write findings to disk after every screen, not at the end.** Create a `TEST_FLIGHT_REPORT_WIP.md` file before testing starts, append findings incrementally, and maintain a screen-by-screen checklist. After compaction, read the file to resume exactly where you left off.
+
+See [TEST_FLIGHT_PROTOCOL.md — Long Session Resilience](FLIGHT_DECK/TEST_FLIGHT_PROTOCOL.md#long-session-resilience-context-compaction-protocol) for the full protocol.
+
+---
+
 ## Why This Works
 
 **One session. No switching.** Cowork Opus stays live the whole time. It knows the project context, remembers previous test results, and tracks improvement across retests.
