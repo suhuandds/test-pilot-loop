@@ -92,3 +92,12 @@ METRICS:
 WHAT WOULD HAVE HELPED:
   [specific suggestions — better labels, onboarding, visual cues]
 ```
+
+### Tagging Your Findings
+
+Tag every finding so it gets routed correctly:
+
+- **`BUG:`** — something is broken (button doesn't work, crash, error). → Goes to Claude Code for fixing.
+- **`UX FEEDBACK:`** — subjective design/layout/wording observation (layout feels cramped, font too small, expected button elsewhere, confusing label). → Goes to human director for a decision. Cowork Opus may also weigh in.
+
+The Insider tier catches all bugs through exhaustive element testing. Your unique value as a Cold user is the UX feedback — first impressions, confusion points, design observations that someone who already knows the app can't provide. Tag them as `UX FEEDBACK` so they don't get lost in the bug queue.

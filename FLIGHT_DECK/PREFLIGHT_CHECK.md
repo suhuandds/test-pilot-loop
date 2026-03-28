@@ -85,9 +85,19 @@ Choose which knowledge tiers to deploy for UX testing. Minimum: 1. Recommended: 
 ```
 ACTIVE TIERS:
   ✅ Tier 1 — Cold User (knows nothing)     — deploy: YES / NO
-  ✅ Tier 2 — Guided User (has manual)       — deploy: YES / NO
+  ✅ Tier 2 — Guided User (has manual)       — deploy: YES / NO   ⚠️ REQUIRES user guide/manual/handbook
   ✅ Tier 3 — Insider (has PRD)              — deploy: YES / NO
 ```
+
+**Deployment prerequisite:** Tier 2 (Guided) requires a user guide, manual, handbook, or help documentation to exist. If there is no documentation to test against, do NOT deploy Guided — it has nothing to work with. Skip it and use Cold + Insider instead.
+
+### Deployment Logic
+
+Each tier does one thing the others can't:
+
+- **Insider** — exhaustive spec compliance. Tests every function, every button, every expected outcome. Catches all bugs. **Always deploy.**
+- **Cold** — first impressions and discoverability. Can a stranger figure it out? **Add when you want UX/design feedback.**
+- **Guided** — manual accuracy cross-check. Does the documentation match reality? **Add only when a manual exists.**
 
 ### Presets
 
@@ -103,6 +113,18 @@ Why: if a cold user can complete the task, UX is good enough. Fastest signal.
   ✅ Tier 3 — Insider
 ```
 Why: the gap between these two IS the Tier Gap Ratio. Skipping Tier 2 saves time while still measuring the knowledge gap.
+
+**Insider Only — Exhaustive Spec Audit (1 tier)**
+```
+  ❌ Tier 1 — Cold User — skipped
+  ❌ Tier 2 — Guided User — skipped
+  ✅ Tier 3 — Insider (exhaustive element audit)
+```
+Why: the Insider tests every function, every button, every expected outcome against the spec. Catches all functional bugs, spec deviations, and missing features. Other tiers only add UX perspective (first impressions, documentation accuracy) — they don't find bugs the Insider wouldn't. Best for: professional/trained-user apps where users know the workflow (e.g., dental practice software, internal tools, B2B apps). Skips discoverability testing since your users will be trained.
+
+**What you trade away:** Cold tier first-impression testing (would a stranger figure this out?) and Guided tier documentation testing (does the manual match reality?). For consumer apps, those matter. For professional tools with trained users, they're noise.
+
+**Optional: Layer UX tiers for design feedback.** Even with Insider-only for bug finding, you can add Cold or Guided tiers occasionally for *design commentary* — layout, visual hierarchy, font size, button placement, color choices. These are not bug reports; they are design inputs for the human director and Cowork to evaluate. Route them separately: bugs go to Claude Code for fixing, design feedback goes to the human for a decision.
 
 **Full UX Test (3 tiers)**
 ```
@@ -292,6 +314,18 @@ Persona model: opus for all personas
 Human approval required for: ALL features
 ```
 Total testing time per feature: ~35 minutes
+
+### Professional / Trained-User App (e.g., PhotoSortVision)
+```
+Personas: None (Insider covers functional testing exhaustively)
+Tiers: Tier 3 — Insider only (exhaustive element audit)
+Dimensions: All 6
+Pass threshold: 25/30
+Auto-fail on any broken element: YES
+Persona model: opus (Insider needs full reasoning for spec comparison)
+```
+Total testing time per feature: ~15-25 minutes
+Why this works: users are trained professionals who know the workflow. The Insider tests every button, toggle, live preview, and keyboard shortcut against the spec. No need for Cold tier "can a stranger figure this out?" testing — your users aren't strangers. Catches all functional bugs that other tiers would also find, plus spec compliance bugs that only the Insider can find.
 
 ### MVP / Prototype (Just Ship It)
 ```

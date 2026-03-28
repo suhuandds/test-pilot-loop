@@ -61,8 +61,37 @@ The Test Pilot doesn't test as "an AI." It tests as **specific human personas** 
 | Tier | File | What They Know | What They Test |
 |------|------|---------------|----------------|
 | 🔴 **Tier 1** (Cold User) | `test-pilot-tier1-cold.md` | App name ONLY | Discoverability, first impressions, learnability |
-| 🟡 **Tier 2** (Guided User) | `test-pilot-tier2-guided.md` | User manual only | Documentation accuracy, instruction followability |
-| 🟢 **Tier 3** (Insider) | `test-pilot-tier3-insider.md` | Full PRD | Spec compliance, feature completeness, acceptance criteria |
+| 🟡 **Tier 2** (Guided User) | `test-pilot-tier2-guided.md` | User manual only | Documentation accuracy, instruction followability. **⚠️ Only deploy when a user guide/manual/handbook exists.** |
+| 🟢 **Tier 3** (Insider) | `test-pilot-tier3-insider.md` | Full PRD | Spec compliance, feature completeness, acceptance criteria, **exhaustive element audit — every button/toggle/preview in the spec must be clicked and verified** |
+
+### What Each Tier Uniquely Does (That the Others Can't)
+
+| Tier | Unique Contribution | Why Only This Tier |
+|------|--------------------|--------------------|
+| **Cold** | First impressions and discoverability — can a stranger figure it out? | The Insider already knows the app. The Guided user has the manual. Only the Cold user is truly lost. |
+| **Guided** | Manual accuracy cross-check — does the documentation match reality? | Only the Guided user reads the manual and compares it to what's on screen. Manual says "click the green button on the top right" but it's actually a blue button on the bottom left — only Guided catches this. |
+| **Insider** | Exhaustive spec compliance — is every function built and working? | Only the Insider has the full spec and can verify every button, toggle, and expected outcome against it. Catches all functional bugs the other tiers would also find, plus spec gaps they'd miss entirely. |
+
+### Insider Pre-Flight: Read Everything, Test Everything
+
+The Insider performs the most extensive test possible. Before testing any screen, the Insider **must**:
+
+1. **Read the full spec** — `CLAUDE.md`, `PRD.md`, and any referenced spec files. This gives complete knowledge of every screen, every button, every toggle, every state transition, and every expected outcome.
+2. **Build a complete element checklist per screen** — extract every interactive element from the spec section for that screen: buttons, toggles, dropdowns, text fields, sliders, drag targets, context menus, keyboard shortcuts, live previews, cards, badges, links, state transitions.
+3. **Test every element** — click/activate each one, verify it does what the spec says, check dependent UI updates, verify state transitions between screens.
+4. **Track coverage** — report how many spec elements were tested vs. how many exist. Every skipped element must be reported with a reason.
+
+This is not a suggestion — it's the Insider's core job. Without it, bugs ship. See `test-pilot-tier3-insider.md` for the full protocol.
+
+### Deployment Logic
+
+**Always deploy Insider** — it catches all functional bugs through exhaustive element testing. This is the minimum for any test flight.
+
+**Add Cold** when you want UX and design feedback — first impressions, discoverability, layout opinions. Useful for consumer apps or when you want a fresh perspective on the UI.
+
+**Add Guided** only when a user guide/manual/handbook exists and you want its accuracy verified. No manual = no Guided. It has nothing to test against.
+
+See `PREFLIGHT_CHECK.md` for specific preset configurations.
 
 ### Universal Archetypes (Layer on Top of Personas)
 
@@ -74,6 +103,17 @@ The Test Pilot doesn't test as "an AI." It tests as **specific human personas** 
 
 **How to combine:** Personas describe WHO (skill level). Archetypes describe WHAT (task type). Knowledge tiers describe HOW MUCH they know. Combine all three for the richest testing:
 - "Pat (Struggling User) as Creator (importing photos) at Tier 1 (knows nothing)"
+
+### Two Types of Findings — Route Them Differently
+
+| Type | Source | Example | Route to |
+|------|--------|---------|----------|
+| **Bug** (broken function) | Insider element audit, any tier | "Live preview doesn't update," "button does nothing on click" | Claude Code → fix it |
+| **Design feedback** (UX opinion) | Cold, Guided, Personas | "Layout feels cramped," "font too small for office monitor," "expected button on the right" | Human director → decide whether to act |
+
+The Insider finds all bugs. Other tiers and personas provide design and UX commentary — subjective observations about layout, visual hierarchy, wording, and feel. These are not defects; they are design inputs. Tag them as `UX FEEDBACK` (not `BUG`) so they follow the UX feedback pipeline (see `FLIGHT_DEBRIEF.md` → UX Feedback Pipeline), not the bug-fix loop.
+
+**UX feedback flow:** Collected during testing → logged but NOT acted on during bug-fix loop → after all bugs verified, Cowork groups by screen, evaluates, and presents to human director → human approves/rejects/defers → approved items become tasks in the next cycle.
 
 ### Domain-Specific Personas (Add Your Own)
 

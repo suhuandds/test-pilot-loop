@@ -320,6 +320,79 @@ DO NOT proceed until BUG-T002-001 is resolved and retested.
 
 ---
 
+## 🎨 UX FEEDBACK PIPELINE — Design & Layout Improvements
+
+Bugs are broken functions. UX feedback is design commentary — layout, visual hierarchy, wording, font size, button placement, color choices, flow improvements. Both come from testing, but they follow different pipelines.
+
+### Three Types of UX Feedback
+
+| Type | Source Tier | Example | Tag |
+|------|------------|---------|-----|
+| **First impression** | Cold | "I had no idea what this app does from the landing screen" | `UX FEEDBACK: first-impression` |
+| **Documentation gap** | Guided | "Manual says click 'Import' but the button is labeled 'Add Photos'" | `UX FEEDBACK: docs-mismatch` |
+| **Design/layout** | Any tier, any persona | "Font too small for office monitor," "layout feels cramped," "expected button on the right" | `UX FEEDBACK: design` |
+
+### How UX Feedback Flows
+
+```
+TESTERS produce UX FEEDBACK (tagged, not filed as bugs)
+        ↓
+COWORK OPUS collects and groups by screen/feature
+        ↓
+Cowork evaluates: does this feedback align with PRD intent?
+  • If yes and low-effort → Cowork adds to TASK QUEUE as UX task
+  • If subjective/debatable → Cowork presents to HUMAN DIRECTOR with recommendation
+  • If contradicts PRD → Cowork flags as PRD UPDATE RECOMMENDATION
+        ↓
+HUMAN DIRECTOR decides: approve / reject / defer
+        ↓
+Approved UX tasks go to TASK QUEUE with risk level ⚪ or 🟢
+        ↓
+CLAUDE CODE implements → Cowork retests the affected screen
+```
+
+### UX Feedback in FLIGHT_PLAN.md
+
+UX feedback goes in a separate section from bugs — do NOT mix them in the FEEDBACK QUEUE:
+
+```
+## UX FEEDBACK LOG
+[YYYY-MM-DD HH:MM] — [Tier/Persona]
+Screen: [which screen]
+Tag: UX FEEDBACK: [first-impression / docs-mismatch / design]
+Observation: [what they noticed]
+Suggestion: [what they think would be better]
+Cowork assessment: [agree / disagree / needs human input]
+Status: [pending / approved / rejected / deferred / implemented]
+```
+
+### When to Collect UX Feedback
+
+UX feedback is collected alongside bug testing but processed separately:
+
+- **During active bug-fix loop:** collect UX feedback but do NOT act on it. Bugs first. Log it for later.
+- **After all bugs verified (ALL_BUGS_VERIFIED):** review accumulated UX feedback. Present batch to human director.
+- **Between cycles:** UX improvements become tasks in the next cycle's TASK QUEUE.
+
+This prevents UX polish from blocking bug fixes, while ensuring design feedback never gets lost.
+
+### Persona-Specific UX Value
+
+Each persona/tier contributes different UX insights:
+
+| Source | What they notice | Why it matters |
+|--------|-----------------|----------------|
+| **Cold tier** | Confusing labels, unclear purpose, bad first impression | Your app's discoverability and learnability |
+| **Guided tier** | Manual doesn't match UI, terminology mismatches, missing instructions | Your documentation quality |
+| **Pat (Struggling)** | Scary error messages, too-small buttons, cognitive overload | Accessibility and low-tech-literacy users |
+| **Alex (Power)** | Missing shortcuts, slow workflows, lack of bulk operations | Power user efficiency |
+| **Jordan (Everyday)** | Confusing labels, missing feedback after actions, broken happy path | Mainstream usability |
+| **Sam (Accessibility)** | Low contrast, missing focus indicators, keyboard traps | WCAG compliance |
+
+**Not all UX feedback is equal.** If 3 out of 4 personas flag the same screen as confusing, that's strong signal. If only Alex (power user) wants a keyboard shortcut, that's a nice-to-have. Cowork weighs the feedback before presenting to the human.
+
+---
+
 ## 📈 TRACKING OVER TIME
 
 Every test session produces dimension scores. Over multiple sessions, patterns emerge:
@@ -358,32 +431,120 @@ BUILD AGENT completes task
         ↓
 AI TEST PILOT receives output + launches app
         ↓
-Tests as 4 personas across 6 dimensions
+Tests as configured tiers/personas across dimensions
         ↓
-Writes bug reports with severity (S1-S5)
+Produces TWO streams of findings:
         ↓
-┌─ S1/S2 on domain-critical feature? → ESCALATE TO HUMAN DIRECTOR
-│   Human decides approach → Cowork routes to agent
-│
-├─ S1/S2 non-critical? → COWORK OPUS decides approach
-│   Opus may still consult the human if uncertain
-│
-├─ S3-S4? → SEND DIRECTLY TO BUILD AGENT
-│   Agent fixes → AI Test Pilot retests
-│
-└─ S5 Cosmetic? → LOG FOR LATER
-    Added to backlog, fixed when convenient
+┌─────────────────────────────────────────────────────────┐
+│  STREAM 1: BUGS (broken functions)                      │
+│                                                         │
+│  ┌─ S1/S2 domain-critical? → ESCALATE TO HUMAN         │
+│  │   Human decides approach → Cowork routes to agent    │
+│  │                                                      │
+│  ├─ S1/S2 non-critical? → COWORK OPUS decides           │
+│  │   Opus may still consult human if uncertain           │
+│  │                                                      │
+│  ├─ S3-S4? → SEND TO BUILD AGENT                        │
+│  │   Agent fixes → retest                               │
+│  │                                                      │
+│  └─ S5 Cosmetic? → LOG FOR LATER                        │
+│                                                         │
+│  Agent fixes → retest → PASS or FAIL (max 3 cycles)    │
+│  After 3 failures → ESCALATE TO HUMAN                   │
+└─────────────────────────────────────────────────────────┘
         ↓
-COWORK OPUS sets Priority (P1-P5) based on business context
-        ↓
-Build agent receives ordered bug list + fix instructions
-        ↓
-Agent fixes → AI Test Pilot retests (abbreviated)
-        ↓
-PASS → next task  |  FAIL → another cycle (max 3)
-        ↓
-After 3 failures → ESCALATE TO HUMAN DIRECTOR for redesign decision
+┌─────────────────────────────────────────────────────────┐
+│  STREAM 2: UX FEEDBACK (design/layout/wording)          │
+│                                                         │
+│  Collected during testing, processed AFTER bugs fixed   │
+│                                                         │
+│  Cowork groups by screen → evaluates → presents to      │
+│  human with recommendation                              │
+│        ↓                                                │
+│  Human approves/rejects/defers                          │
+│        ↓                                                │
+│  Approved items → TASK QUEUE in next cycle               │
+│  Claude Code implements → Cowork retests screen          │
+└─────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## ✅ TEST FLIGHT COMPLETE — Final Summary (MANDATORY)
+
+When all bugs are verified fixed (STATUS = ALL_BUGS_VERIFIED or PASS), Cowork **must** write a final summary to FLIGHT_PLAN.md before closing the loop. This is the handoff document — the human director reads this to know exactly what happened, what changed, and what UX feedback is pending.
+
+### Template
+
+```
+## TEST FLIGHT COMPLETE
+[YYYY-MM-DD HH:MM]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+### BUGS FIXED — SUMMARY
+Total bugs found: [count]
+Total bugs fixed: [count]
+Iterations to fix all: [count]
+
+| Bug ID | Severity | Screen | What Was Broken | What Was Fixed | Files Changed |
+|--------|----------|--------|----------------|---------------|---------------|
+| BUG-001 | S3 Major | [screen] | [broken behavior] | [fix description] | [files] |
+| BUG-002 | S4 Minor | [screen] | [broken behavior] | [fix description] | [files] |
+| ... | ... | ... | ... | ... | ... |
+
+### UX FEEDBACK COLLECTED
+Total UX observations: [count]
+
+| # | Source | Screen | Type | Observation | Cowork Assessment |
+|---|--------|--------|------|-------------|-------------------|
+| 1 | Cold tier | [screen] | first-impression | [what they noticed] | [agree/disagree/needs human] |
+| 2 | Pat (Struggling) | [screen] | design | [what they noticed] | [agree/disagree/needs human] |
+| 3 | Guided tier | [screen] | docs-mismatch | [what they noticed] | [agree/disagree/needs human] |
+| ... | ... | ... | ... | ... | ... |
+
+Recommended for next cycle: [count] items
+Deferred: [count] items
+Rejected by Cowork: [count] items (with reasons)
+
+### TESTING CONFIGURATION USED
+Tiers: [which tiers were deployed]
+Personas: [which personas were deployed]
+Dimensions: [which dimensions were evaluated]
+
+### TIMING
+Total test flight duration: [time]
+Time per iteration: [iteration 1: Xm, iteration 2: Xm, ...]
+
+### VERDICT
+[PASS ✅ / CONDITIONAL PASS ⚠️]
+All bugs verified fixed. [X] UX feedback items pending human review.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Why This Matters
+
+Without this summary:
+- The human has to read through the entire FLIGHT_PLAN.md history to understand what happened
+- Bug fixes are scattered across multiple AGENT OUTPUT LOG entries
+- UX feedback is buried in test reports
+- No one remembers what was tested with which configuration
+
+With this summary:
+- Human sees one table of everything that was fixed
+- UX feedback is collected in one place, ready for human decision
+- Testing config is recorded so the next cycle knows what was covered
+- Timing data helps estimate future test flights
+
+### When to Write It
+
+Cowork writes this summary as the **last action before auto-stopping patrol**. The sequence is:
+
+1. All bugs verified → STATUS = ALL_BUGS_VERIFIED
+2. Cowork writes TEST FLIGHT COMPLETE summary to FLIGHT_PLAN.md
+3. Cowork writes "Patrol complete. Standing down." to AGENT OUTPUT LOG
+4. Patrol stops
 
 ---
 

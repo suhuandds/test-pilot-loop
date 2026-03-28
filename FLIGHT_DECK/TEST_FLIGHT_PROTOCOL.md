@@ -363,6 +363,44 @@ The cycle is identical for all tiers. Only the PREDICT and EVALUATE steps change
 |------|------|--------|---------|
 | **PREDICT** | Guess from labels and layout | Check manual for this element | Check PRD for this requirement |
 | **EVALUATE** | "Did it do what I guessed?" | "Did it match the manual?" | "Did it meet the spec?" |
+| **COVERAGE** | Whatever you find on screen | Whatever the manual mentions | **Every element in the spec — exhaustive** |
+
+### Insider: Exhaustive Element Testing (MANDATORY)
+
+Cold and Guided tiers test what they encounter organically. The Insider tier is different — **it must test everything in the spec, not just what it stumbles across.** This is the most extensive test the framework performs.
+
+#### Pre-Flight: Read the Full Spec First
+
+**Before touching the app**, the Insider MUST read all spec files:
+- `CLAUDE.md` — the project spec and state machine (often the most detailed source of every screen, button, toggle, state transition, and expected outcome)
+- `PRD.md` — the product requirements document
+- Any other spec files referenced by the above
+
+The Insider must confirm spec read by writing to the AGENT OUTPUT LOG:
+```
+Spec read: [file list]. [X] screens, [Y] total elements identified.
+```
+
+**Do NOT begin testing until the full spec is read.** Partial knowledge = missed bugs.
+
+#### Per-Screen Testing Process
+
+Before testing each screen, the Insider reads the spec section for that screen and builds a **complete element checklist**: every button, toggle, dropdown, text field, slider, drag target, context menu, keyboard shortcut, live preview, card, badge, link, and state transition. Then tests each one — not just "is it present?" but "does it work when I click/activate it, and does the outcome match what the spec says?"
+
+This means the Insider test takes longer than Cold or Guided. That's expected. The Insider is the acceptance gate — if it passes, the feature is done. If the Insider skips elements, bugs ship.
+
+**Common categories the Insider must not skip:**
+- **Every button and action** — click each one, verify the expected outcome from the spec
+- **Dynamic UI** — live previews, counters, badges, progress indicators (do they update in real-time when inputs change?)
+- **Conditional UI** — toggles that show/hide other controls (does the dependent control appear/disappear?)
+- **State transitions** — navigating between screens/steps (does each transition work? does data persist correctly?)
+- **Cross-screen connections** — buttons on one screen that affect another screen (does the navigation/data flow work?)
+- **Settings effects** — changing a setting should change app behavior elsewhere (verify the downstream effect)
+- **All keyboard shortcuts** listed in the spec
+- **All context menus** (right-click) listed in the spec
+- **All drag-and-drop** targets listed in the spec
+- **Error states** — what happens when things go wrong? Does the spec define error handling for this screen?
+- **Empty states** — what does each screen look like with no data?
 
 ---
 

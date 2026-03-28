@@ -140,17 +140,143 @@ OPUS retests...
 
 ## How to Run
 
+### First-Time Setup (New Project)
+
+Before running your first test flight, the framework needs to be installed into your project. Either Cowork or Claude Code can do this — the human director tells one of them to read the framework repo and set it up.
+
+**Step 1: Direct an agent to read the framework**
+
+Tell Cowork or Claude Code:
+```
+Read the Test Pilot Loop framework at [path/to/Test Pilot Loop/].
+Read all files in FLIGHT_DECK/ and understand the full framework:
+  - TEST_PILOT_LOOP.md (how the loop works)
+  - AUTOPILOT.md (Claude Code's rules)
+  - PILOT_HANDBOOK.md (testing personas and tiers)
+  - FLIGHT_DEBRIEF.md (how bugs are reported)
+  - TEST_FLIGHT_PROTOCOL.md (how testing is executed)
+  - PREFLIGHT_CHECK.md (testing configuration)
+Then set up this project to use it.
+```
+
+**Step 2: Agent creates project-specific Flight Deck**
+
+The agent reads the framework, then creates a `FLIGHT_DECK/` directory in the project with:
+- `AUTOPILOT.md` — copied from the framework (Claude Code's rules of engagement)
+- `FLIGHT_PLAN.md` — created fresh (the shared communication file for this project)
+- Persona agent files in `.claude/agents/` — copied from `PERSONAS/agents/`
+
+The agent also updates the project's `CLAUDE.md` to reference AUTOPILOT.md:
+```
+## Test Pilot Loop
+This project uses the Test Pilot Loop framework.
+@FLIGHT_DECK/AUTOPILOT.md
+```
+
+**Step 3: Agent reads the project spec**
+
+The agent MUST read the project's own spec files (`CLAUDE.md`, `PRD.md`) to understand what it's building/testing. This is mandatory for both Cowork and Claude Code — neither agent can do their job without knowing the project.
+
+**Step 4: Both agents confirm setup**
+
+Both agents write confirmation to `FLIGHT_PLAN.md`:
+```
+[timestamp] — [Agent Name]
+Framework installed. Project spec read: [files read].
+Ready for test pilot loop.
+```
+
+After this one-time setup, use the Session Start steps below for every test flight cycle.
+
 ### Session Start
 
-Launch both apps at the same time on the same Mac:
+Launch both apps at the same time on the same Mac. **Both agents must confirm patrol is active before any building starts.**
 
-1. **Open Cowork with Opus** — give it the standing patrol instruction (below)
-2. **Open Claude Code** (or any AI coding agent) — start building
-3. **Create `FLIGHT_DECK/FLIGHT_PLAN.md`** in your project — this is the shared communication file
+1. **Open Cowork with Opus**
+2. **Open Claude Code** (or any AI coding agent)
+3. **Create `FLIGHT_DECK/FLIGHT_PLAN.md`** if it doesn't exist — this is the shared communication file
+4. **Start Cowork patrol (MANDATORY)** — give Cowork the standing patrol instruction (below). Cowork will NOT automatically patrol unless explicitly told to. Without this, Cowork sits idle and never picks up `READY_FOR_TEST` signals. After receiving the instruction, Cowork writes confirmation to FLIGHT_PLAN.md.
+5. **Start Claude Code auto-patrol (MANDATORY)** — this is what makes the dual-patrol model work. Claude Code runs on-demand per message, not as a persistent process. Without an explicit loop, it will never check `FLIGHT_PLAN.md` on its own.
 
-### The Opus Patrol Instruction
+**Option 1: fswatch (RECOMMENDED — event-driven, zero waste)**
 
-Give Cowork Opus this prompt at the start of your session:
+```
+run_in_background "fswatch -1 FLIGHT_DECK/FLIGHT_PLAN.md && echo 'FLIGHT_PLAN changed'"
+```
+
+Claude Code sleeps until FLIGHT_PLAN.md is modified, then wakes up, reads it, and acts. No polling, no wasted tokens. Install if needed: `brew install fswatch` (macOS) or `apt install fswatch` (Linux).
+
+When the watcher fires, Claude Code runs the patrol prompt:
+
+```
+"FLIGHT_PLAN.md changed — read the STATUS BLOCK and FEEDBACK QUEUE.
+If STATUS is BUILD_REQUESTED or there is new feedback addressed to Claude Code:
+  1. Read the feedback/task details
+  2. Fix the bugs or build the feature
+  3. Run tests, rebuild via xcodebuild or appropriate build tool
+  4. Launch the app so Cowork can test it
+  5. Write output to AGENT OUTPUT LOG
+  6. Update STATUS → READY_FOR_TEST
+If STATUS is ALL_BUGS_VERIFIED or PASS:
+  1. Verify no stuck feedback, unanswered bugs, or pending tasks
+  2. If all clear → write 'Patrol complete. Watcher stopped.' to AGENT OUTPUT LOG
+  3. Stop watching — the cycle is done.
+  4. If anything unresolved → write warning to FLIGHT_PLAN.md, keep watching.
+If STATUS is READY_FOR_TEST → do nothing, waiting for Cowork.
+If GLOBAL_STOP is FROZEN → stop all work, write frozen state to log.
+Re-arm the watcher for the next change."
+```
+
+**Option 2: /loop cron (FALLBACK — works everywhere, wastes tokens)**
+
+Use this if fswatch is not available:
+
+```
+/loop 10m "Patrol FLIGHT_DECK/FLIGHT_PLAN.md — read the STATUS BLOCK and FEEDBACK QUEUE.
+If STATUS is BUILD_REQUESTED or there is new feedback addressed to Claude Code:
+  1. Read the feedback/task details
+  2. Fix the bugs or build the feature
+  3. Run tests, rebuild via xcodebuild or appropriate build tool
+  4. Launch the app so Cowork can test it
+  5. Write output to AGENT OUTPUT LOG
+  6. Update STATUS → READY_FOR_TEST
+If STATUS is ALL_BUGS_VERIFIED or PASS:
+  1. Verify no stuck feedback, unanswered bugs, or pending tasks
+  2. If all clear → write 'Patrol complete. Loop stopped.' to AGENT OUTPUT LOG
+  3. Cancel this /loop — the cycle is done. Do not keep polling.
+  4. If anything unresolved → write warning to FLIGHT_PLAN.md, keep polling.
+If STATUS is READY_FOR_TEST → do nothing, waiting for Cowork.
+If GLOBAL_STOP is FROZEN → stop all work, write frozen state to log."
+```
+
+After starting patrol (either method), Claude Code should write confirmation to FLIGHT_PLAN.md:
+```
+[timestamp] — Claude Code
+Auto-patrol configured: [fswatch watcher / /loop 10m] active.
+Polling FLIGHT_PLAN.md for STATUS changes and feedback.
+```
+If this entry is missing from the AGENT OUTPUT LOG, the patrol is not running.
+
+6. **Verify all pre-flight checks pass** — before ANY building or testing begins, confirm all of the following:
+
+```
+PRE-FLIGHT CHECKLIST (all must pass before loop starts):
+
+☐ Claude Code has read AUTOPILOT.md (its rules of engagement)
+☐ Claude Code has read CLAUDE.md / PRD.md (the project spec)
+☐ Claude Code patrol is active (confirmation in AGENT OUTPUT LOG)
+☐ Cowork has read all Flight Deck files (PILOT_HANDBOOK, FLIGHT_DEBRIEF, TEST_FLIGHT_PROTOCOL, PREFLIGHT_CHECK)
+☐ Cowork patrol is active (confirmation in AGENT OUTPUT LOG)
+☐ Insider tier has read full spec (CLAUDE.md + PRD.md) — confirmed by writing
+    "Spec read: [file list]. [X] screens, [Y] total elements identified."
+    to AGENT OUTPUT LOG before first test
+```
+
+**Do not start building until all confirmations are present.** The loop requires two patrolling agents — one building, one testing — and both must have full project knowledge. A single missing check breaks the feedback cycle.
+
+### The Cowork Patrol Instruction (MANDATORY)
+
+Give Cowork Opus this prompt at the start of your session. **This is not optional.** Without it, Cowork will never check for `READY_FOR_TEST` and Claude Code's builds will sit untested:
 
 ```
 You are the test pilot and patrol monitor for this project.
@@ -171,11 +297,38 @@ TEST MODE (triggered by "Ready for test"):
   5. Update FLIGHT_PLAN.md with specific instructions in NEXT_ACTION_FOR_CLAUDE_CODE. Claude Code picks this up on its next patrol cycle (every 10 minutes).
   6. Return to PATROL MODE
 
-Keep cycling between patrol and test until I tell you to stop.
+AUTO-STOP:
+  When STATUS reaches ALL_BUGS_VERIFIED or PASS:
+  1. Verify no stuck feedback, unanswered bugs, or pending tasks
+  2. If all clear → write "Patrol complete. Standing down." to AGENT OUTPUT LOG → stop polling
+  3. If anything unresolved → write warning to FLIGHT_PLAN.md, keep polling
+
+Keep cycling between patrol and test until the loop auto-stops or the human tells you to stop.
 This session may run overnight — pace yourself.
 ```
 
+After receiving this instruction, Cowork **must** write confirmation to FLIGHT_PLAN.md:
+```
+[timestamp] — Cowork Opus
+Patrol configured: checking FLIGHT_PLAN.md every 10 minutes.
+Standing by for READY_FOR_TEST signals.
+```
+
 **Why 10 minutes?** Designed for overnight operation. Nobody is waiting. For daytime use, tell Opus "check every 5 minutes" or simply say "check the file now."
+
+### Patrol Lifecycle — Start, Stop, Restart
+
+Patrols follow the lifecycle of a test flight cycle. They are not permanent.
+
+| Phase | Trigger | What Happens |
+|-------|---------|-------------|
+| **START** | `FLIGHT_PLAN.md` created, or human says "start test pilot loop" | Both agents set up patrol and write confirmation to AGENT OUTPUT LOG. No building until both confirm. |
+| **AUTO-STOP** | STATUS reaches `ALL_BUGS_VERIFIED` or `PASS` | Cowork writes TEST FLIGHT COMPLETE summary (bugs fixed table + UX feedback table + timing) → both agents verify nothing is stuck → write "Patrol complete" to log → stop. Claude Code stops fswatch (or cancels `/loop` cron). Cowork stops checking. |
+| **RESTART** | Human says "test pilot loop" or "start next cycle," or sets new tasks + STATUS back to `BUILD_REQUESTED` | Both agents re-confirm patrol in writing before building resumes. |
+
+**Before auto-stopping, both agents must verify:** no stuck feedback, no unanswered bugs, no pending tasks. If anything is unresolved, write a warning to FLIGHT_PLAN.md and keep polling.
+
+**Why auto-stop matters:** Without it, both agents waste tokens polling an idle file indefinitely. A completed loop should clean up after itself.
 
 ### How the Code Agent Launches the App
 

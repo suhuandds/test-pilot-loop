@@ -215,6 +215,63 @@ UX RECOMMENDATIONS (not bugs — for next iteration):
 HUMAN ESCALATION: None required for these bugs.
 ```
 
+### From Test Pilot (Insider) → Claude Code (2026-03-27 18:15)
+
+```
+Test Result: ⚠️ NEEDS WORK (20/30)
+
+Insider tier used real project specification: CLAUDE.md (538 lines) +
+17 chapter specs (CH01–CH17). Findings are grounded in specific spec
+requirements with chapter and rule references.
+
+BUGS TO FIX (ordered by severity):
+
+  1. BUG-I001 [S3 🟡 Major] — Duplicate patient entries from same-name series
+     → FIX FIRST. "W-ng, Suet" appears twice in patient list (1 + 30 photos).
+     → PhotoGrouper (CH05) doesn't merge series with identical names.
+     → Root Cause: Missing deduplication in PhotoGrouper
+
+  2. BUG-I002 [S3 🟡 Major] — "Schedule Import" section on Import screen is dead
+     → Core feature (CH16, 467-line spec). Only accessible via Settings > Schedule.
+     → Root Cause: Event handler not wired
+
+  3. BUG-I003 [S3 🟡 Major] — Parenthetical preferred name not stripped
+     → CH04 R4: "Remove parenthetical preferred names." "Sharick, Louise M (Lou"
+       creates folder "Sharick_Louise_M_Lou" instead of "Sharick_Louise_M".
+     → Root Cause: NameParser not implementing CH04 R4
+
+  4. BUG-I004 [S4 🔵 Minor] — Context menu missing 2 of 5 spec'd actions
+     → CH09 R4 requires: Assign to, Exclude, Transform, Set Description,
+       Select All in Group. Last two are missing.
+     → Root Cause: Incomplete implementation
+
+  5. BUG-I005 [S4 🔵 Minor] — Cmd+Z undo stack not working
+     → CH09 R6 specifies undo/redo stack. Cmd+Z does nothing after Exclude.
+       No undo toast appears (CH09 R6 specifies toast with [Undo] link).
+     → Root Cause: Undo stack not connected to review actions
+
+  6. BUG-I006 [S4 🔵 Minor] — "X" keyboard shortcut doesn't exclude
+     → CH09 R1/R10: "X Exclude selected photo(s)" — no response on keypress.
+     → Root Cause: Keyboard shortcut not implemented
+
+  7. BUG-I007–I011 [S4 🔵 Minor] — Five additional spec deviations:
+     → No undo timer on Done screen (CH12 R5, 30-min window)
+     → No confirmation after undo (silent transition to Review)
+     → Undo uses modal dialog not inline expand (CH12 R5)
+     → Missing "Review Photos" button on Import (CH16 R8)
+     → Missing first-time cleanup modal (CH12 R2)
+
+UX RECOMMENDATIONS (Insider-specific):
+  • Merge same-name PatientSeries entries in PhotoGrouper
+  • Implement NameParser parenthetical stripping per CH04 R4
+  • Add "+ New Folder" and "Select Folder" buttons per CH09 R3
+  • Add search/filter to "Assign to" submenu for large patient lists
+  • Add Camera Time Correction section to Settings > Schedule (CH16 R9)
+
+HUMAN ESCALATION: BUG-I001 (duplicate patients) may need architectural
+  discussion — merging PatientSeries entries affects the data model.
+```
+
 ---
 
 ## How This Example Demonstrates the Framework
@@ -224,11 +281,14 @@ This FLIGHT_PLAN shows one complete cycle of the Test Pilot Loop:
 1. **Tasks assigned** with risk levels (T001–T005)
 2. **Builder output** with confidence scores and self-assessment
 3. **Test Pilot evaluation** as Cold User through computer use
-4. **Bug reports** with severity, root cause, and reproduction steps
-5. **Feedback queue** directing the fix cycle
-6. **Fix tasks created** (T006–T008) from test findings
+4. **Insider tier evaluation** against the real 17-chapter product spec
+5. **Bug reports** with severity, root cause, spec references, and reproduction steps
+6. **Feedback queue** directing the fix cycle (Cold + Insider findings)
+7. **Fix tasks created** (T006–T008) from Cold test findings
 
-The builder flagged two of the four bugs in self-assessment (placeholder text, event handler timing) but shipped anyway because tests passed. The Test Pilot caught them by actually using the app — exactly what the framework is designed to do.
+The builder flagged two of the four Cold bugs in self-assessment (placeholder text, event handler timing) but shipped anyway because tests passed. The Test Pilot caught them by actually using the app.
+
+The Insider tier, armed with the real product specification, found 13 additional bugs that the Cold User could never have discovered — including data integrity issues (duplicate patients, wrong folder names from parenthetical nicknames) and 6 missing features specified in the chapters. This demonstrates why both tiers are essential: Cold catches UX confusion, Insider catches spec violations.
 
 ---
 
