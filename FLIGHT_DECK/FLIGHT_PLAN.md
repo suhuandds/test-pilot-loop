@@ -120,13 +120,55 @@ This means one model handles both lightweight patrol and deep testing. No separa
 > Both agents read this section FIRST on every patrol.
 
 ```
+GLOBAL_STOP:    [ACTIVE | 🛑 FROZEN]
+PILOT_MODE:     [👨‍✈️ SUPERVISED | ✈️ AUTOPILOT | 🛬 AUTOPILOT-SAFE]
 CURRENT_PHASE:  [build | test | fix | retest | complete | failed]
 ASSIGNED_TO:    [claude_code | cowork | human]
 STATUS:         [see STATUS CODES below]
 LAST_UPDATED:   [YYYY-MM-DD HH:MM]
 UPDATED_BY:     [claude_code | cowork | human]
 ITERATION:      [1, 2, 3...]
+AUTOPILOT_UNTIL: [YYYY-MM-DD HH:MM | Indefinite | N/A]
 ```
+
+### 🛑 KILL SWITCH — GLOBAL STOP
+
+**Any agent or the human director can set `GLOBAL_STOP: 🛑 FROZEN` at any time.**
+
+When FROZEN:
+- ALL agents immediately stop current work on their next patrol check
+- No new tasks may be started
+- No status transitions except `ESCALATE_TO_HUMAN`
+- Agents write their current state to ACTIONS_TAKEN with note "🛑 Frozen"
+- Patrol continues but takes NO actions — only logs status
+- Only Cowork or the human director can set `GLOBAL_STOP: ACTIVE` to resume
+
+When to freeze:
+- System going in wrong architectural direction
+- Agents caught in infinite loop or cascading errors
+- Need to rethink approach before more work is wasted
+- Any agent detects output that conflicts with PRD
+- Human director stepping away and wants agents stopped (alternative to Autopilot modes)
+
+### ✈️ PILOT MODE — Human Supervision Level
+
+The human director sets this before stepping away. Controls how much autonomy the agents have.
+
+**👨‍✈️ SUPERVISED (Default):** Human director is available. Normal operations. Agents escalate per the escalation rules. Human approves critical bugs, design decisions, priority conflicts.
+
+**✈️ AUTOPILOT:** Human director is away. Cowork has full authority.
+- Cowork makes ALL decisions that would normally escalate to human
+- Handles critical bugs on its own — chooses the safest fix approach
+- Makes design/UX decisions based on PRD and existing patterns
+- **Guardrails still active:** Kill switch can still fire. Confidence < 60% on any decision → Cowork holds the task for human's return. No irreversible actions.
+- All decisions logged in ACTIONS_TAKEN with `[AUTOPILOT DECISION]` tag
+- When `AUTOPILOT_UNTIL` time is reached, mode reverts to SUPERVISED automatically
+
+**🛬 AUTOPILOT-SAFE (Conservative):** Human director is away but wants minimal risk.
+- Agents can only proceed with minor/trivial findings
+- Critical or major findings → Cowork sets `GLOBAL_STOP: 🛑 FROZEN` and waits
+- No architectural decisions, no design changes
+- Essentially: "keep doing easy work, stop if anything hard comes up"
 
 ---
 
